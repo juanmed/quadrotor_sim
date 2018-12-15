@@ -190,4 +190,11 @@ title("Physically motivated weights")
 xlabel('time'); 
 legend(('x', 'y'), loc='lower right');
 
+
+
+
+
+
+
+
 show()

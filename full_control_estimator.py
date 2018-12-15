@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy import signal
 
 fig = plt.figure(figsize=(20,10))
-fig.suptitle(" Quadrotor Height Controller and Estimator")
+fig.suptitle(" Quadrotor Height LQR Controller and Estimator")
 ax0 = fig.add_subplot(2,2,1)
 ax1 = fig.add_subplot(2,2,2)
 ax2 = fig.add_subplot(2,2,3)
@@ -25,8 +25,11 @@ u = [m*g]
 t_max = 5.0  #s
 t = np.arange(0.0,t_max,0.1)
 
+air = 1.0  # set to 1 to activate air model, otherwise set to 0
+
+
 # define system matrices
-A = np.matrix([[-c/m,0.0],[1.0,0.0]])
+A = np.matrix([[-air*c/m,0.0],[1.0,0.0]])
 B = np.matrix([[1.0],[0.0]])
 Ch = np.matrix([0.0,1.0])  # define matrix for position output
 Cv = np.matrix([1.0,0.0])
@@ -77,6 +80,15 @@ print("Controller gains: {},{}".format(K.item(0,0),K.item(0,1)))
 Nx = np.matrix([[0.0],[1.0]])
 Nu = 0.0
 
+#**************** ADDED LQR Controller
+# Define performance index weights for Vertical Dynamics
+Qx1 = np.diag([10, 100]);
+Qu1a = np.diag([1]);
+(K, X, E) = ctl.lqr(A, B, Qx1, Qu1a)
+K = np.matrix(K)
+print("LQR gains for Vertical Dynamics")
+print(K)
+
 xd = np.matrix([[0.0], [R]]); 
 cl_ss_p = ctl.ss(A-B*K, B*(Nu + K*Nx)*R, Ch, D)
 cl_ss_v = ctl.ss(A-B*K, B*(Nu + K*Nx)*R, Cv, D)
@@ -88,7 +100,7 @@ ax1.plot(th, h,linestyle = '-',color ='r', label = "Height")
 ax1t = ax1.twinx()
 ax1t.plot(tv, v, linestyle = '--', color = 'g', label = "Velocity")
 ax1.plot(t, ref, color = "k", label = 'desired')
-ax1.set_title("Closed loop with controller gains K1={:.2f}, K2={:.2f}".format(K.item(0,0),K.item(0,1)), fontsize='small')
+ax1.set_title("Closed loop with LQR controller gains K1={:.2f}, K2={:.2f}".format(K.item(0,0),K.item(0,1)), fontsize='small')
 ax1.legend(loc='lower right', shadow=True, fontsize='small')
 ax1.set_xlabel("time {s}")
 ax1.set_ylabel("Height {m}")
@@ -108,6 +120,17 @@ A_T= np.transpose(A)
 C_T = np.transpose(Ch)
 L = np.transpose(ctl.acker(A_T,C_T,dep))
 print("Estimator gains: {},{}".format(L.item(0,0),L.item(1,0))) 
+
+
+
+#-------------- ADDED LQR Estimator
+# Define performance index weights For Lateral Dynamics
+Qx1 = np.diag([100, 100]);
+Qu1a = np.diag([1]);
+(L, X, E) = ctl.lqr(A_T, C_T , Qx1, Qu1a)
+L = np.matrix(L.T)    # Remember to transpose the resulting gains
+print("Estimator gains: {},{}".format(L.item(0,0),L.item(1,0))) 
+
 
 
 # define reference input matrix
@@ -132,7 +155,7 @@ Nbar = Nu + K*Nx
 #    y  = ()
 
 # seed the generator for repeatable results
-#np.random.seed(1)
+np.random.seed(1)
 # add 1% noise
 noise_percent = 0.01
 An = noise_percent*np.random.rand(2,2)+A
@@ -152,7 +175,7 @@ ax2.plot(th, h,linestyle = '-',color ='r', label = "Height")
 ax2t = ax2.twinx()
 ax2t.plot(tv, v, linestyle = '--', color = 'g', label = "Velocity")
 ax2.plot(t, ref, color = "k", label = 'desired')
-ax2.set_title("Closed loop with controller gains K1={:.1f}, K2={:.2f}, and estimator gains L1={:.1f}, L2={:.2f}".format(K.item(0,0),K.item(0,1),L.item(0,0), L.item(1,0)), fontsize='small')
+ax2.set_title("Closed loop with LQR controller gains K1={:.1f}, K2={:.2f}, and estimator gains L1={:.1f}, L2={:.2f}".format(K.item(0,0),K.item(0,1),L.item(0,0), L.item(1,0)), fontsize='small')
 ax2.legend(loc='lower right', shadow=True, fontsize='small')
 ax2.set_xlabel("time {s}")
 ax2.set_ylabel("Height {m}")

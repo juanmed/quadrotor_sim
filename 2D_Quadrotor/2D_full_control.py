@@ -1,4 +1,7 @@
 #2D quadrotor controller and estimator
+# The method for analyzing the systems in python was inspired on
+# https://www.cds.caltech.edu/~murray/wiki/index.php/Python-control/Example:_Vertical_takeoff_and_landing_aircraft
+
 
 import numpy as np
 import control as ctl
@@ -12,6 +15,10 @@ ax1 = fig.add_subplot(2,2,2)
 ax2 = fig.add_subplot(2,2,3)
 ax3 = fig.add_subplot(2,2,4) 
 
+track = plt.figure(figsize=(20,10))
+track.suptitle(" 2D (Y-Z) Quadrotor Command Tracking ")
+track0 = track.add_subplot(1,1,1)
+
 # define constants
 g = 9.81 #m/s2
 m = 1.0  #kg  mass of the quadrotor
@@ -24,7 +31,7 @@ air = 1.0  # set to 1 to activate air model, otherwise set to 0
 
 
 # define time
-t_max = 7.0  #s
+t_max = 20.0  #s
 t = np.arange(0.0,t_max,0.1)
 
 # define step input gain:  u(t) = R*u(t)
@@ -97,9 +104,9 @@ ax0.set_title("Step response of open loop system", fontsize='small')
 ax0.legend(loc='center right', shadow=True, fontsize='small')
 ax0.set_xlabel("time {s}")
 ax0.set_ylabel("Position {m}")
-ax0.set_yticks(p_ticks)
+#ax0.set_yticks(p_ticks)
 #ax0t.set_ylabel("Angle {rad}")
-ax0t.set_yticks(angle_ticks)
+#ax0t.set_yticks(angle_ticks)
 
 
 #*****************************************#
@@ -390,7 +397,13 @@ ax3.set_xlabel("time {s}")
 ax3.set_ylabel("Position {m}")
 ax3.set_yticks(p_ticks)
 
-
+track0.plot(y,z, linestyle='-', color = 'r', label = 'Quadrotor Position')
+track0.plot(signaly,signalz, linestyle='-', color = 'b', label = 'Desired Position')
+track0.legend(loc='upper right', shadow=True, fontsize='small')
+track0.set_xlabel("Y Position {m}")
+track0.set_ylabel("Z Position {m}")
+track0.text(signaly[0],signalz[0], "Start")
+track0.text(signaly[-1],signalz[-1], "Finish")
 
 
 plt.show()
