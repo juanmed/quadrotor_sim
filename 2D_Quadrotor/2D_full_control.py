@@ -84,6 +84,7 @@ Cy = np.matrix([0.0,0.0,1.0,0.0,0.0,0.0])
 Cz = np.matrix([0.0,0.0,0.0,1.0,0.0,0.0])
 Cpsi = np.matrix([0.0,0.0,0.0,0.0,0.0,1.0])
 
+# transmission matrix
 D = np.matrix([0.0])
 
 # Open Loop Systems Response
