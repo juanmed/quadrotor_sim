@@ -331,4 +331,88 @@ ax3.set_xlabel('x {m}')
 ax3.set_ylabel('y {m}')
 ax3.set_zlabel('z {m}')
 
+
+
+#*****************************************#
+#          DEFINE A PERSONALIZED INPUT SIGNAL
+#*****************************************#
+
+# reseed to generate different results
+np.random.seed()
+
+# Redefine the System just to remove the input Reference gain R
+# so that that it follows input signal and not (input signal)*R
+cl_ss_x = ctl.ss(Ax-Bx*Kx, Bx*(Nu_x + Kx*Nx_x)*1.0,Cx,D)
+cl_ss_y = ctl.ss(Ay-By*Ky, By*(Nu_y + Ky*Nx_y)*1.0,Cy,D) 
+cl_ss_z = ctl.ss(Az-Bz*Kz, Bz*(Nu_z + Kz*Nx_z)*1.0,Cz,D) 
+cl_ss_yaw = ctl.ss(Ayaw-Byaw*Kyaw, Byaw*(Nu_yaw + Kyaw*Nx_yaw)*1.0,Cyaw,D) 
+
+signalx = np.ones_like(t)
+signaly = np.ones_like(t)
+signalz = np.ones_like(t)
+random_timesx = list()
+random_timesy = list()
+random_timesz = list()
+
+# define number of time slots
+slotsx = np.random.randint(0,3)
+slotsy = np.random.randint(0,3)
+slotsz = np.random.randint(0,3)
+
+# generate random time divisions
+for i in range(slotsx):
+	random_timesx.append(int((len(signalx)-1)*np.random.random_sample()))
+for i in range(slotsy):
+	random_timesy.append(int((len(signaly)-1)*np.random.random_sample()))
+for i in range(slotsz):
+	random_timesz.append(int((len(signalz)-1)*np.random.random_sample()))
+
+
+# add the index of the last element
+random_timesx.append(len(signalx)-1)
+random_timesy.append(len(signaly)-1)
+random_timesz.append(len(signalz)-1)
+
+random_timesx = np.unique(np.sort(random_timesx)).flatten()
+random_timesy = np.unique(np.sort(random_timesy)).flatten()
+random_timesz = np.unique(np.sort(random_timesz)).flatten()
+
+
+# Store random input signal
+start = 0
+for i in random_timesx:
+	signalx[start:i] = signalx[start:i]*(Rx*np.random.random_sample())
+	start = i
+
+start = 0
+for i in random_timesy:
+	signaly[start:i] = signaly[start:i]*(Ry*np.random.random_sample())
+	start = i
+
+start = 0
+for i in random_timesz:
+	signalz[start:i] = signalz[start:i]*(Rz*np.random.random_sample())
+	start = i	
+
+# evaluate the forced response of both systems
+t, x, u = ctl.forced_response(cl_ss_x, T=t, U=signalx)
+t, y, u = ctl.forced_response(cl_ss_y, T=t, U=signaly)
+t, z, u = ctl.forced_response(cl_ss_z, T=t, U=signalz)
+
+fig2 = plt.figure(figsize=(20,10))
+track0 = fig2.add_subplot(1,1,1, projection="3d")
+track0.plot(x,y,z, color = "r", label = "quadrotor")
+track0.plot(signalx,signaly,signalz,color="b",label="command")
+track0.set_title("Closed Loop response with LQR Controller to random input signal {3D}")
+track0.set_xlabel('x {m}')
+track0.set_ylabel('y {m}')
+track0.set_zlabel('z {m}')
+track0.text(signalx[0], signaly[0], signalz[0], "start", color='red')
+track0.text(signalx[-1], signaly[-1], signalz[-1], "finish", color='red')
+
+
+
+
+
+
 plt.show()
