@@ -4,9 +4,25 @@ This repository hosts several python scripts that accompany my study of the quad
 
 ## 1D Quadrotor Simulation and Control
 
+Script: full_control_estimator.py
+
+![alt text](https://github.com/juanmed/quadrotor_sim/blob/master/Images/1D_Control.png)
+
 ## 2D Quadrotor Simulation and Control
 
+Script:2D_full_control.py (in 2D_Quadrotor folder)
+
+![alt text](https://github.com/juanmed/quadrotor_sim/blob/master/Images/2D_ControLA.png)
+![alt text](https://github.com/juanmed/quadrotor_sim/blob/master/Images/2D_ControlB.png)
+
 ## 3D Quadrotor Simulation and Control
+
+Script: 3D_control.py (in 3D Quadrotor folder)
+
+![alt text](https://github.com/juanmed/quadrotor_sim/blob/master/Images/3D_ControlA.png)
+![alt text](https://github.com/juanmed/quadrotor_sim/blob/master/Images/3D_ControlB.png)
+
+
 
 As an alternative to Matlab, I am using the Python Control Library [2]. Although the book [] I am using presents code in Matlab, Matlab has a price (which is worth it) that I cannot afford. Also I am comfortable with python. 
 
