@@ -83,7 +83,7 @@ ax3 = fig.add_subplot(2,2,4, projection='3d')
 
 # define constants
 g = 9.81 #m/s2
-b = 0.01  # air drag/friction force
+b = 0.1  # body drag constant
 c = 0.2 #air friction constant
 
 # quadrotor physical constants
@@ -126,6 +126,13 @@ Bx = np.matrix(
 	[0.0],
 	[np.sin(t1)*l/Ixx]])
 
+# X axis dynamics with body drag
+Ax_bd = np.matrix(
+	[[0.0,1.0,0.0,0.0],
+	[0.0,-b/m,g,0.0],
+	[0.0,0.0,0.0,1.0],
+	[0.0,0.0,0.0,0.0]])
+
 # X position output matrix
 Cx = np.matrix([1.0,0.0,0.0,0.0])
 # X velocity output matrix
@@ -149,6 +156,13 @@ By = np.matrix(
 	[0.0],
 	[np.sin(t1)*l/Iyy]])
 
+# Y dynamics with body drag
+Ay_bd = np.matrix(
+	[[0.0,1.0,0.0,0.0],
+	[0.0,-b/m,-1.0*g,0.0],
+	[0.0,0.0,0.0,1.0],
+	[0.0,0.0,0.0,0.0]])
+
 # Y position output matrix
 Cy = np.matrix([1.0,0.0,0.0,0.0])
 # Y velocity output matrix
@@ -167,6 +181,11 @@ Az = np.matrix(
 Bz = np.matrix(
 	[[0.0],
 	[1.0/m]])
+
+# Z axis dynamics with body drag
+Az_bd = np.matrix(
+	[[0.0,1.0],
+	[0.0,-b/m]])
 
 # Z position output matrix
 Cz = np.matrix([1.0,0.0])
@@ -203,31 +222,59 @@ y_ol = ctl.ss(Ay, By, Cy, D)
 z_ol = ctl.ss(Az, Bz, Cz, D)
 yaw_ol = ctl.ss(Ayaw,Byaw,Cyaw,D)
 
+# Create open loop systems for X,Y,Z with body drag. The rotation dynamics (yaw angle)
+# are not affected by drag
+x_ol_bd = ctl.ss(Ax_bd, Bx, Cx, D)
+y_ol_bd = ctl.ss(Ay_bd, By, Cy, D)
+z_ol_bd = ctl.ss(Az_bd, Bz, Cz, D)
+
+
 # get step response of the systems
 tx, x = ctl.step_response(x_ol, T = t)
 ty, y = ctl.step_response(y_ol, T = t)
 tz, z = ctl.step_response(z_ol, T = t)
 tyaw, yaw=ctl.step_response(yaw_ol, T = t)
 
+# get step response of the systems with body drag
+tx, x_bd = ctl.step_response(x_ol_bd, T = t)
+ty, y_bd = ctl.step_response(y_ol_bd, T = t)
+tz, z_bd = ctl.step_response(z_ol_bd, T = t)
 
-ax0.plot(t,x,marker = "*",color ='r', label = "x")
+# plot open loop response per axis (x,y,z) and orientation (yaw)
+ax0.plot(t,x,linestyle = "-",color ='r', label = "x")
 ax0.plot(t,y,linestyle = '-',color ='g', label = "y")
 ax0.plot(t,z,linestyle = '-',color ='b', label = "z")
 ax0.plot(t,yaw,linestyle = '-',color ='m', label = "yaw")
-ax0.set_title("Step response for open loop system", fontsize='small')
+
+# plot open loop response per axis (x,y,z) with body drag
+ax0.plot(t,x_bd,linestyle = '--',color ='firebrick', label = "x_bd")
+ax0.plot(t,y_bd,linestyle = '--',color ='mediumseagreen', label = "y_bd")
+ax0.plot(t,z_bd,linestyle = '--',color ='royalblue', label = "z_bd")
+
+ax0.set_title("Step response for open loop system (bd means 'with body drag')", fontsize='small')
 ax0.legend(loc='upper left', shadow=True, fontsize='small')
 ax0.set_xlabel("time {s}")
 ax0.set_ylabel("Position {m}")
 
+# plot open loop response of 3D position
 ax2.scatter(x,y, z, color = 'r')
-ax2.set_title("Open Loop system response {3D}")
+ax2.scatter(x_bd,y_bd,z_bd, color = 'g')
+ax2.set_title("Open Loop system response {3D} (red : no drag, green: body drag)")
 ax2.set_xlabel('x {m}')
 ax2.set_ylabel('y {m}')
 ax2.set_zlabel('z {m}')
 
 
+######################################################
+##                                              	##
+##            Create input reference values    		##
+##            i.e. desired values 					##
+##													##
+######################################################
+
+
 # define step input gain:  u(t) = R*u(t)
-# for each control variable
+# for each controlled state variable : x,y,z and yaw
 Rx = 9.0
 refx = Rx*np.ones_like(t)
 Ry = 10.0
@@ -247,7 +294,12 @@ p_ticks = np.arange(0,max([Rx,Ry,Rz])+2,1)        #position ticks
 ##													##
 ######################################################
 
+
+#    *****        SIMPLE DYNAMICS            ******  #
+
 # Define performance index weights For X,Y Dynamics
+# This performance index puts much greater emphasis on position performance
+# and very low emphasis on control effort
 Qx1 = np.diag([100.0, 100.0, 1.0, 1.0]);
 Qu1a = np.diag([1.0]);
 
@@ -255,7 +307,6 @@ Qu1a = np.diag([1.0]);
 (K, X, E) = ctl.lqr(Ax, Bx, Qx1, Qu1a)
 Kx = np.matrix(K)
 print("LQR gains for X Dynamics: {}".format(Kx))
-#print(Kx)
 
 # Calculate input matrices for Reference
 Nu_x, Nx_x = getInputMatrices(Ax,Bx,Cx,D)
@@ -267,26 +318,26 @@ cl_ss_x = ctl.ss(Ax-Bx*Kx, Bx*(Nu_x + Kx*Nx_x)*Rx,Cx,D)
 (K, X, E) = ctl.lqr(Ay, By, Qx1, Qu1a)
 Ky = np.matrix(K)
 print("LQR gains for Y Dynamics: {}".format(Ky))
-#print(Ky)
 
 # Calculate input matrices for Reference
 Nu_y, Nx_y = getInputMatrices(Ay,By,Cy,D)
-# create controlled state space system for X dynamics
+# create controlled state space system for Y dynamics
 cl_ss_y = ctl.ss(Ay-By*Ky, By*(Nu_y + Ky*Nx_y)*Ry,Cy,D) 
 
 # Define performance index weights for Z, Yaw Dynamics
+# This performance index puts much greater emphasis on position performance
+# and very low emphasis on control effort
 Qx1 = np.diag([100, 1]);
-Qu1a = np.diag([0.1]);
+Qu1a = np.diag([1.0]);
 
 # Calculate LQR gains for Z dynamics
 (K, X, E) = ctl.lqr(Az, Bz, Qx1, Qu1a)
 Kz = np.matrix(K)
 print("LQR gains for Z Dynamics: {}".format(Kz))
-#print(Ky)
 
 # Calculate input matrices for Reference
 Nu_z, Nx_z = getInputMatrices2(Az,Bz,Cz,D)
-# create controlled state space system for X dynamics
+# create controlled state space system for Z dynamics
 cl_ss_z = ctl.ss(Az-Bz*Kz, Bz*(Nu_z + Kz*Nx_z)*Rz,Cz,D) 
 
 
@@ -294,7 +345,6 @@ cl_ss_z = ctl.ss(Az-Bz*Kz, Bz*(Nu_z + Kz*Nx_z)*Rz,Cz,D)
 (K, X, E) = ctl.lqr(Ayaw, Byaw, Qx1, Qu1a)
 Kyaw = np.matrix(K)
 print("LQR gains for Yaw Dynamics: {}".format(Kyaw))
-#print(Ky)
 
 # Calculate input matrices for Reference
 Nu_yaw, Nx_yaw = getInputMatrices2(Ayaw,Byaw,Cyaw,D)
@@ -302,13 +352,60 @@ Nu_yaw, Nx_yaw = getInputMatrices2(Ayaw,Byaw,Cyaw,D)
 cl_ss_yaw = ctl.ss(Ayaw-Byaw*Kyaw, Byaw*(Nu_yaw + Kyaw*Nx_yaw)*Ryaw,Cyaw,D) 
 
 
+#    *****     DYNAMICS  WITH BODY DRAG      ******  #
+
+Qx1 = np.diag([100.0, 100.0, 1.0, 1.0]);
+Qu1a = np.diag([1.0]);
+
+# LQR controller for X Dynamics with body drag
+(K, X, E) = ctl.lqr(Ax_bd, Bx, Qx1, Qu1a)
+Kx = np.matrix(K)
+print("LQR gains for X Dynamics with Body Drag: {}".format(Kx))
+# Calculate input matrices for Reference
+Nu_x_bd, Nx_x_bd = getInputMatrices(Ax_bd,Bx,Cx,D)
+# create controlled state space system for X dynamics with body drag
+cl_ss_x_bd = ctl.ss(Ax_bd-Bx*Kx, Bx*(Nu_x_bd + Kx*Nx_x_bd)*Rx,Cx,D)
+
+# Calculate LQR gains for Y dynamics with body drag
+(K, X, E) = ctl.lqr(Ay_bd, By, Qx1, Qu1a)
+Ky = np.matrix(K)
+print("LQR gains for Y Dynamics with Body Drag: {}".format(Ky))
+
+# Calculate input matrices for Reference
+Nu_y_bd, Nx_y_bd = getInputMatrices(Ay_bd,By,Cy,D)
+# create controlled state space system for Y dynamics
+cl_ss_y_bd = ctl.ss(Ay_bd-By*Ky, By*(Nu_y_bd + Ky*Nx_y_bd)*Ry,Cy,D) 
+
+
+Qx1 = np.diag([100, 1]);
+Qu1a = np.diag([1.0]);
+
+# Calculate LQR gains for Z dynamics with body drag
+(K, X, E) = ctl.lqr(Az_bd, Bz, Qx1, Qu1a)
+Kz = np.matrix(K)
+print("LQR gains for Z Dynamics with Body Drag: {}".format(Kz))
+
+# Calculate input matrices for Reference
+Nu_z_bd, Nx_z_bd = getInputMatrices2(Az_bd,Bz,Cz,D)
+# create controlled state space system for Z dynamics
+cl_ss_z_bd = ctl.ss(Az_bd-Bz*Kz, Bz*(Nu_z_bd + Kz*Nx_z_bd)*Rz,Cz,D) 
+
+
+
+
+# get step responses for controlled systems
 tx, x = ctl.step_response(cl_ss_x, T = t)
 ty, y = ctl.step_response(cl_ss_y, T = t)
 tz, z = ctl.step_response(cl_ss_z, T = t)
 tyaw, yaw = ctl.step_response(cl_ss_yaw, T = t)
 
-#tx, x=ctl.step_response(cl_ss_x, T = t)
 
+# get step response for controlled systems with body drag
+tx, x_bd = ctl.step_response(cl_ss_x_bd, T = t)
+ty, y_bd = ctl.step_response(cl_ss_y_bd, T = t)
+tz, z_bd = ctl.step_response(cl_ss_z_bd, T = t)
+
+# plot controlled step response
 ax1.plot(t,x,color ='r', label = "x")
 ax1.plot(t, refx,linestyle = '--', color = "k", label = 'x ref')
 ax1.plot(t,y,color="g",label="y")
@@ -318,15 +415,21 @@ ax1.plot(t, refz,linestyle = '--', color = "sandybrown", label = 'z ref')
 ax1.plot(t,yaw,color="m",label="yaw")
 ax1.plot(t, refyaw,linestyle = '--', color = "mediumvioletred", label = 'yaw ref')
 
+# plot open loop response per axis (x,y,z) with body drag
+ax1.plot(t,x_bd,linestyle = '-.',color ='firebrick', label = "x_bd")
+ax1.plot(t,y_bd,linestyle = '-.',color ='mediumseagreen', label = "y_bd")
+ax1.plot(t,z_bd,linestyle = '-.',color ='royalblue', label = "z_bd")
+
 #ax1.set_title("Closed loop with  LQR controller gains K1={:.2f}, K2={:.2f}, K3={:.2f}, K4={:.2f}".format(Kx.item(0,0),Kx.item(0,1),Kx.item(0,2),Kx.item(0,3)), fontsize='small')
-ax1.set_title("LQR Controller Response")
-ax1.legend(loc='lower right', shadow=True, fontsize='small')
+ax1.set_title("LQR Controller Response (bd means 'with body drag')")
+ax1.legend(loc='center right', shadow=True, fontsize='small')
 ax1.set_xlabel("time {s}")
 ax1.set_ylabel("Position {m}")
 ax1.set_yticks(p_ticks)
 
 ax3.scatter(x,y,z, color = 'r')
-ax3.set_title("Closed Loop response with LQR Controller {3D}")
+ax3.scatter(x_bd,y_bd,z_bd, color = 'g')
+ax3.set_title("Closed Loop response with LQR Controller {3D} (red : no drag, green: body drag)")
 ax3.set_xlabel('x {m}')
 ax3.set_ylabel('y {m}')
 ax3.set_zlabel('z {m}')
@@ -346,6 +449,10 @@ cl_ss_x = ctl.ss(Ax-Bx*Kx, Bx*(Nu_x + Kx*Nx_x)*1.0,Cx,D)
 cl_ss_y = ctl.ss(Ay-By*Ky, By*(Nu_y + Ky*Nx_y)*1.0,Cy,D) 
 cl_ss_z = ctl.ss(Az-Bz*Kz, Bz*(Nu_z + Kz*Nx_z)*1.0,Cz,D) 
 cl_ss_yaw = ctl.ss(Ayaw-Byaw*Kyaw, Byaw*(Nu_yaw + Kyaw*Nx_yaw)*1.0,Cyaw,D) 
+
+cl_ss_x_bd = ctl.ss(Ax_bd-Bx*Kx, Bx*(Nu_x_bd + Kx*Nx_x_bd)*1.0,Cx,D)
+cl_ss_y_bd = ctl.ss(Ay_bd-By*Ky, By*(Nu_y_bd + Ky*Nx_y_bd)*1.0,Cy,D) 
+cl_ss_z_bd = ctl.ss(Az_bd-Bz*Kz, Bz*(Nu_z_bd + Kz*Nx_z_bd)*1.0,Cz,D) 
 
 signalx = np.ones_like(t)
 signaly = np.ones_like(t)
@@ -396,11 +503,11 @@ for i in random_timesz:
 
 
 # Create an spiral signal to track...not sure what will happen
-k = 0.1
-w = 1
+k = 1.0
+w = 0.2
 signalx = k*(1 - np.cos(w*t))
 signaly = k*np.sin(w*t)
-signalz = t
+signalz = 0.5*t
 
 
 # evaluate the forced response of both systems
@@ -408,12 +515,18 @@ t, x, u = ctl.forced_response(cl_ss_x, T=t, U=signalx)
 t, y, u = ctl.forced_response(cl_ss_y, T=t, U=signaly)
 t, z, u = ctl.forced_response(cl_ss_z, T=t, U=signalz)
 
+# evaluate the forced response of both systems
+t, x_bd, u = ctl.forced_response(cl_ss_x_bd, T=t, U=signalx)
+t, y_bd, u = ctl.forced_response(cl_ss_y_bd, T=t, U=signaly)
+t, z_bd, u = ctl.forced_response(cl_ss_z_bd, T=t, U=signalz)
+
 fig2 = plt.figure(figsize=(20,10))
 track0 = fig2.add_subplot(1,2,1, projection="3d")
 errors = fig2.add_subplot(1,2,2)
 
 # plot 3D trajectory and 3D quadrotor position
 track0.plot(x,y,z, color = "r", label = "quadrotor")
+track0.plot(x_bd,y_bd,z_bd, color = "g", label = "quadrotor with drag")
 track0.plot(signalx,signaly,signalz,color="b",label="command")
 track0.set_title("Closed Loop response with LQR Controller to random input signal {3D}")
 track0.set_xlabel('x {m}')
@@ -426,6 +539,11 @@ track0.text(signalx[-1], signaly[-1], signalz[-1], "finish", color='red')
 errors.plot(t,signalx-x, color = "r", label = "x error")
 errors.plot(t,signaly-y, color = "g", label = "y error")
 errors.plot(t,signalz-z, color = "b", label = "z error")
+
+errors.plot(t,signalx-x_bd,linestyle = '-.', color = "firebrick", label = "x_bd error")
+errors.plot(t,signaly-y_bd,linestyle = '-.', color = "mediumseagreen", label = "y_bd error")
+errors.plot(t,signalz-z_bd,linestyle = '-.', color = "royalblue", label = "z_bd error")
+
 errors.set_title("Position error for reference tracking")
 errors.set_xlabel("time {s}")
 errors.set_ylabel(" Position {m}")

@@ -24,7 +24,7 @@ Script: 3D_control.py (in 3D Quadrotor folder)
 
 
 
-As an alternative to Matlab, I am using the Python Control Library [2]. Although the book [] I am using presents code in Matlab, Matlab has a price (which is worth it) that I cannot afford. Also I am comfortable with python. 
+As an alternative to Matlab, I am using the Python Control Library [2]. Although the book [1] I am using presents code in Matlab, Matlab has a price (which is worth it) that I cannot afford. Also I am comfortable with python. 
 
 I got inspiration on how to model the (otherwise written in paper) systems in Python from
 

@@ -92,7 +92,7 @@ y_ol = ctl.ss(A,Bu1,Cy,D)
 z_ol = ctl.ss(A,Bu1,Cz,D)
 psi_ol = ctl.ss(A,Bu2,Cpsi,D)
 
-ty, y=ctl.step_response(z_ol, T = t)
+ty, y=ctl.step_response(y_ol, T = t)
 tz, z=ctl.step_response(z_ol, T = t)
 tpsi, psi=ctl.step_response(psi_ol, T = t)
 
