@@ -31,7 +31,7 @@ air = 1.0  # set to 1 to activate air model, otherwise set to 0
 
 
 # define time
-t_max = 20.0  #s
+t_max = 5.0  #s
 t = np.arange(0.0,t_max,0.1)
 
 # define step input gain:  u(t) = R*u(t)
