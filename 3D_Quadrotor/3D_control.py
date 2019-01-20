@@ -13,18 +13,18 @@ from mpl_toolkits.mplot3d import Axes3D
 # Create a parser for the command line arguments
 def createCommandLineParser():
 	parser1 = argparse.ArgumentParser(description='3D Quadcopter linear controller simulation')
-	parser1.add_argument('-f', help='Path to log file.', default='log201811071627_1080p_0.txt')
-	parser1.add_argument('-b', help='Histogram bin size', default=200)
-	parser1.add_argument('-g', help='Path to gpx file.', default='20181112/2018._11._12._noon_5_09_18.gpx')
-	parser1.add_argument('-r', help='Video Resolution', default='1280*720.gpx')
+	#parser1.add_argument('-f', help='Path to log file.', default='log201811071627_1080p_0.txt')
+	#parser1.add_argument('-b', help='Histogram bin size', default=200)
+	#parser1.add_argument('-g', help='Path to gpx file.', default='20181112/2018._11._12._noon_5_09_18.gpx')
+	#parser1.add_argument('-r', help='Video Resolution', default='1280*720.gpx')
 	parser1.add_argument('-t', help='Total Simulation time', default=10.0)
-	parser1.add_argument('-a', help='Name of GPS Track image', default='GPS Track image file name with extension')
-	parser1.add_argument('-k', help='Name of GPS Data image', default='GPS Data image file name with extension')
-	parser1.add_argument('-x', help='LOG File format: 1: oldest , 2: new  3:newest ', default="old")
-	parser1.add_argument('-y', help='Number of camera for which latency map will be draw, 5 = all cameras', default="5")
-	parser1.add_argument('-q', help='Colormap to be used [viridis_r, magma_r, inferno_r]', default="inferno_r")
-	parser1.add_argument('-o', help='Bin number for Encoding Latency Histogram', default="5")
-	parser1.add_argument('-p', help='Test Place', default="Downtown")
+	#parser1.add_argument('-a', help='Name of GPS Track image', default='GPS Track image file name with extension')
+	#parser1.add_argument('-k', help='Name of GPS Data image', default='GPS Data image file name with extension')
+	#parser1.add_argument('-x', help='LOG File format: 1: oldest , 2: new  3:newest ', default="old")
+	#parser1.add_argument('-y', help='Number of camera for which latency map will be draw, 5 = all cameras', default="5")
+	#parser1.add_argument('-q', help='Colormap to be used [viridis_r, magma_r, inferno_r]', default="inferno_r")
+	#parser1.add_argument('-o', help='Bin number for Encoding Latency Histogram', default="5")
+	#parser1.add_argument('-p', help='Test Place', default="Downtown")
 
 	#parser.add_argument('-w', help='Path to rotated image', default='r1.jpg')
 	args = parser1.parse_args()
@@ -398,9 +398,9 @@ for i in random_timesz:
 # Create an spiral signal to track...not sure what will happen
 k = 0.1
 w = 1
-signalx = k*(1 - np.cos(w*t))
+signalx = k*(1 - np.cos(w*t/2))
 signaly = k*np.sin(w*t)
-signalz = t
+signalz = k*np.ones_like(t)
 
 
 # evaluate the forced response of both systems

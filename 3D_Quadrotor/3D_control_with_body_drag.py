@@ -87,20 +87,20 @@ b = 0.1  # body drag constant
 c = 0.2 #air friction constant
 
 # quadrotor physical constants
-m = 1.0  #kg  mass of the quadrotor
-Ixx =0.5   # kg*m2 moment of inertia around X-axis (quadrotor rotates around X-axis)
-Iyy =0.5   # kg*m2 
-Izz =0.5   # kg*m2
-Ktao =0.02           # Drag torque constant for motors
-Kt =0.2             # Thrust constant for motors
+m = .18  #kg  mass of the quadrotor
+Ixx =0.00025   # kg*m2 moment of inertia around X-axis (quadrotor rotates around X-axis)
+Iyy =0.000232   # kg*m2 
+Izz =0.0003738   # kg*m2
+Ktao =1.5e-9           # Drag torque constant for motors
+Kt =6.11e-8             # Thrust constant for motors
 
 
 # quadrotor geometry constants
-t1 = np.pi/4   		# rads
+t1 = np.pi/2   		# rads
 t2 = 3*np.pi/4  	#rads
 t3 = 5*np.pi/4		# rads
 t4 = 7*np.pi/4		# rads
-l = 0.2 			#m  arm lenght from center of mass to each rotor
+l = 0.086 			#m  arm lenght from center of mass to each rotor
 
 
 # define time range for analysis
@@ -108,7 +108,7 @@ t_max = int(args.t)  #s
 t = np.arange(0.0,t_max,0.01)
 
 
-air = 1.0  # set to 1 to activate air model, otherwise set to 0
+air = 0.0  # set to 1 to activate air model, otherwise set to 0
 
 # equilibrium state
 
@@ -300,7 +300,7 @@ p_ticks = np.arange(0,max([Rx,Ry,Rz])+2,1)        #position ticks
 # Define performance index weights For X,Y Dynamics
 # This performance index puts much greater emphasis on position performance
 # and very low emphasis on control effort
-Qx1 = np.diag([100.0, 100.0, 1.0, 1.0]);
+Qx1 = np.diag([100.0, 1.0, 1.0, 1.0]);
 Qu1a = np.diag([1.0]);
 
 # Calculate LQR gains for X dynamics
@@ -310,6 +310,8 @@ print("LQR gains for X Dynamics: {}".format(Kx))
 
 # Calculate input matrices for Reference
 Nu_x, Nx_x = getInputMatrices(Ax,Bx,Cx,D)
+print("X Dynamics Input Matrices are: Nu_x{}, Nx_x{}".format(Nu_x,Nx_x))
+
 # create controlled state space system for X dynamics
 cl_ss_x = ctl.ss(Ax-Bx*Kx, Bx*(Nu_x + Kx*Nx_x)*Rx,Cx,D)
 
@@ -321,13 +323,15 @@ print("LQR gains for Y Dynamics: {}".format(Ky))
 
 # Calculate input matrices for Reference
 Nu_y, Nx_y = getInputMatrices(Ay,By,Cy,D)
+print("Y Dynamics Input Matrices are: Nu_y {}, Nx_y {}".format(Nu_y,Nx_y))
+
 # create controlled state space system for Y dynamics
 cl_ss_y = ctl.ss(Ay-By*Ky, By*(Nu_y + Ky*Nx_y)*Ry,Cy,D) 
 
 # Define performance index weights for Z, Yaw Dynamics
 # This performance index puts much greater emphasis on position performance
 # and very low emphasis on control effort
-Qx1 = np.diag([100, 1]);
+Qx1 = np.diag([100., 1.]);
 Qu1a = np.diag([1.0]);
 
 # Calculate LQR gains for Z dynamics
@@ -337,6 +341,7 @@ print("LQR gains for Z Dynamics: {}".format(Kz))
 
 # Calculate input matrices for Reference
 Nu_z, Nx_z = getInputMatrices2(Az,Bz,Cz,D)
+print("Z Dynamics Input Matrices are: Nu_z {}, Nx_z {}".format(Nu_z,Nx_z))
 # create controlled state space system for Z dynamics
 cl_ss_z = ctl.ss(Az-Bz*Kz, Bz*(Nu_z + Kz*Nx_z)*Rz,Cz,D) 
 
@@ -348,13 +353,15 @@ print("LQR gains for Yaw Dynamics: {}".format(Kyaw))
 
 # Calculate input matrices for Reference
 Nu_yaw, Nx_yaw = getInputMatrices2(Ayaw,Byaw,Cyaw,D)
+print("Yaw Dynamics Input Matrices are: Nu_yaw {}, Nx_yaw {}".format(Nu_yaw,Nx_yaw))
+
 # create controlled state space system for X dynamics
 cl_ss_yaw = ctl.ss(Ayaw-Byaw*Kyaw, Byaw*(Nu_yaw + Kyaw*Nx_yaw)*Ryaw,Cyaw,D) 
 
 
 #    *****     DYNAMICS  WITH BODY DRAG      ******  #
 
-Qx1 = np.diag([100.0, 100.0, 1.0, 1.0]);
+Qx1 = np.diag([100.0, 1.0, 1.0, 1.0]);
 Qu1a = np.diag([1.0]);
 
 # LQR controller for X Dynamics with body drag
@@ -363,6 +370,8 @@ Kx = np.matrix(K)
 print("LQR gains for X Dynamics with Body Drag: {}".format(Kx))
 # Calculate input matrices for Reference
 Nu_x_bd, Nx_x_bd = getInputMatrices(Ax_bd,Bx,Cx,D)
+print("X Dynamics Input Matrices with Body Drag are: Nu_x_bd {}, Nx_x_bd {}".format(Nu_x_bd,Nx_x_bd))
+
 # create controlled state space system for X dynamics with body drag
 cl_ss_x_bd = ctl.ss(Ax_bd-Bx*Kx, Bx*(Nu_x_bd + Kx*Nx_x_bd)*Rx,Cx,D)
 
@@ -373,11 +382,13 @@ print("LQR gains for Y Dynamics with Body Drag: {}".format(Ky))
 
 # Calculate input matrices for Reference
 Nu_y_bd, Nx_y_bd = getInputMatrices(Ay_bd,By,Cy,D)
+print("Y Dynamics Input Matrices with Body Drag are: Nu_y_bd {}, Nx_y_bd {}".format(Nu_y_bd,Nx_y_bd))
+
 # create controlled state space system for Y dynamics
 cl_ss_y_bd = ctl.ss(Ay_bd-By*Ky, By*(Nu_y_bd + Ky*Nx_y_bd)*Ry,Cy,D) 
 
 
-Qx1 = np.diag([100, 1]);
+Qx1 = np.diag([100, 1.0]);
 Qu1a = np.diag([1.0]);
 
 # Calculate LQR gains for Z dynamics with body drag
@@ -387,6 +398,8 @@ print("LQR gains for Z Dynamics with Body Drag: {}".format(Kz))
 
 # Calculate input matrices for Reference
 Nu_z_bd, Nx_z_bd = getInputMatrices2(Az_bd,Bz,Cz,D)
+print("Z Dynamics Input Matrices with Body Drag are: Nu_z_bd {}, Nx_z_bd {}".format(Nu_z_bd,Nx_z_bd))
+
 # create controlled state space system for Z dynamics
 cl_ss_z_bd = ctl.ss(Az_bd-Bz*Kz, Bz*(Nu_z_bd + Kz*Nx_z_bd)*Rz,Cz,D) 
 
