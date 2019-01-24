@@ -104,7 +104,7 @@ refc = Rc*np.ones_like(t)
 
 
 	
-m = 0.5
+m = 0.18
 I = np.array([[0.00025, 0, 2.55e-6],
               [0, 0.000232, 0],
               [2.55e-6, 0, 0.0003738]])
@@ -208,6 +208,8 @@ print("LQR gains for translation Dynamics: {}".format(Kt))
 
 # create closed loop system...
 Nu, Nx = getInputMatrices(At,Bt,Ct,D)
+print("Translation Variables Input Matrices are: Nu{}, Nx{}".format(Nu,Nx))
+
 x_cl = ctl.ss(At-Bt*Kt, Bt*(Nu +Kt*Nx)*1.0 , Ct, D)
 
 # output performance matrix for rotational variables
@@ -223,6 +225,8 @@ print("LQR gains for rotational Dynamics: {}".format(Kr))
 
 # create closed loop system...
 Nu, Nx = getInputMatrices(Ar,Br,Cr,D)
+print("Rotation Variables Input Matrices are: Nu{}, Nx{}".format(Nu,Nx))
+
 wx_cl = ctl.ss(Ar-Br*Kr, Br*(Nu +Kr*Nx)*1.0 , Cr, D)
 
 

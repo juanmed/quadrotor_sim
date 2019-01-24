@@ -33,7 +33,7 @@ def createCommandLineParser():
 	#parser1.add_argument('-b', help='Histogram bin size', default=200)
 	#parser1.add_argument('-g', help='Path to gpx file.', default='20181112/2018._11._12._noon_5_09_18.gpx')
 	#parser1.add_argument('-r', help='Video Resolution', default='1280*720.gpx')
-	parser1.add_argument('-t', help='Total Simulation time', default=10.0)
+	parser1.add_argument('-t', help='Total Simulation time', default=20.0)
 	#parser1.add_argument('-a', help='Name of GPS Track image', default='GPS Track image file name with extension')
 	#parser1.add_argument('-k', help='Name of GPS Data image', default='GPS Data image file name with extension')
 	#parser1.add_argument('-x', help='LOG File format: 1: oldest , 2: new  3:newest ', default="old")
@@ -61,7 +61,7 @@ def gen_helix_trajectory(t):
 
 	x_0 = 1.0
 	y_0 = 1.0
-	z_0 = 0.0
+	z_0 = 0.0	
 
 	# positions in helix
 	x = a*np.cos(wx*t) + x_0
@@ -156,6 +156,101 @@ def gen_helix_trajectory2(t):
 	snap = np.array([[s_x],[s_y],[s_z]])
 
 	return [pos,vel,acc,jerk,snap, psi, psi_rate, psi_dd, psi_ddd, psi_dddd]
+
+
+def gen_trajectory3(t, t_max):
+
+	x,y,z,v_x,v_y,v_z,a_x,a_y,a_z,j_x,j_y,j_z,s_x,s_y,s_z = [list(),list(),list(),
+															list(),list(),list(),
+															list(),list(),list(),
+															list(),list(),list(),
+															list(),list(),list()]
+
+	psi, psi_rate, psi_dd, psi_ddd, psi_dddd = list(),list(),list(),list(),list()
+
+	a = 2.0
+	b = 2.0
+	c = 5.0
+
+	wx = 0.5
+	wy = 1.0
+
+	x_0 = 1.0
+	y_0 = 1.0
+	z_0 = 0.0
+
+	for (i,j) in enumerate(t):
+		if( j < t_max):
+
+			# positions in helix
+			x.append(a*np.cos(wx*j) + x_0)
+			y.append(b*np.sin(wy*j) + y_0)
+			z.append(c*j + z_0)
+			#psi = 0.0*np.ones_like(t)
+			#tangent_vector = map(lambda a,b,c: np.matrix([[a],[b],[0]]),-a*wx*np.sin(wx*t),b*wy*np.cos(wy*t),c)
+			psi.append(np.sin(j))
+			#psi = np.arccos( )
+
+			# velocities in helix
+			v_x.append(-a*wx*np.sin(wx*j))
+			v_y.append(b*wy*np.cos(wy*j))
+			v_z.append(c)
+			psi_rate.append(np.cos(j))#0.0*np.ones_like(t)
+
+			# accelerations in helix
+			a_x.append(-(wx**2)*(x[i] - x_0))
+			a_y.append(-(wy**2)*(y[i] - y_0))
+			a_z.append(0.0)
+			psi_dd.append(-1.0*np.sin(j))#0.0*np.ones_like(t)
+
+			# jerks in helix
+			j_x.append(-(wx**2)*(v_x[i]))
+			j_y.append(-(wy**2)*(v_y[i]))
+			j_z.append(0.0)
+			psi_ddd.append(-1.0*np.cos(j))#0.0*np.ones_like(t)
+
+			# snap in helix
+			s_x.append(-(wx**2)*(a_x[i]))
+			s_y.append(-(wy**2)*(a_y[i]))
+			s_z.append(0.0) #*np.ones_like(t)
+			psi_dddd.append(np.sin(j)) #0.0*np.ones_like(t)
+
+		else:
+			# positions in helix
+			x.append(a*np.cos(wx*t_max) + x_0)
+			y.append(b*np.sin(wy*t_max) + y_0)
+			z.append(c*t_max + z_0)
+			psi.append(np.sin(t_max))
+			#psi = np.arccos( )
+
+			# velocities in helix
+			v_x.append(0.0)
+			v_y.append(0.0)
+			v_z.append(0.0)
+			psi_rate.append(0.0)#np.cos(i))
+
+			# accelerations in helix
+			a_x.append(0.0)
+			a_y.append(0.0)
+			a_z.append(0.0)
+			psi_dd.append(0.0)#-1.0*np.sin(i))#
+
+			# jerks in helix
+			j_x.append(0.0)
+			j_y.append(0.0)
+			j_z.append(0.0)
+			psi_ddd.append(0.0)#-1.0*np.cos(i))#0.0*np.ones_like(t)
+
+			# snap in helix
+			s_x.append(0.0)
+			s_y.append(0.0)
+			s_z.append(0.0) #*np.ones_like(t)
+			psi_dddd.append(0.0)#np.sin(i)) #0.0*np.ones_like(t)
+
+
+
+	return [x,y,z,v_x,v_y,v_z,a_x,a_y,a_z,j_x,j_y,j_z,s_x,s_y,s_z, psi, psi_rate, psi_dd, psi_ddd, psi_dddd]
+
 
 def get_x(sigma1):
 	return sigma1
@@ -389,10 +484,12 @@ def main():
 
 	fig = plt.figure(figsize=(20,10))
 	fig.suptitle(" 3D (Y-Z) Quadrotor Control using Differential Flatness Property")
-	ax0 = fig.add_subplot(2,2,1, projection='3d')
-	ax1 = fig.add_subplot(2,2,2)
-	ax2 = fig.add_subplot(2,2,3)#, projection='3d')
-	ax3 = fig.add_subplot(2,2,4)#, projection='3d') 
+	ax0 = fig.add_subplot(3,2,1, projection='3d')
+	ax1 = fig.add_subplot(3,2,2)
+	ax2 = fig.add_subplot(3,2,3)#, projection='3d')
+	ax3 = fig.add_subplot(3,2,4)#, projection='3d') 
+	ax4 = fig.add_subplot(3,2,5)
+	ax5 = fig.add_subplot(3,2,6)
 
 	fig1 = plt.figure(figsize=(20,10))
 	fig1.suptitle(" 3D (Y-Z) Quadrotor Control using Differential Flatness Property")
@@ -403,14 +500,15 @@ def main():
 
 
 	# define simulation time
-	t_max = int(args.t)
+	t_max_ = int(args.t)
 	dt = 0.01
-	t = np.arange(0.0,t_max,dt)
+	t = np.arange(0.0,t_max_,dt)
 
 	# generate trajectory
-	helix_traj = gen_helix_trajectory(t)
+	helix_traj = gen_trajectory3(t,t_max_*3/4)#gen_helix_trajectory(t)
 
 	helix_traj2 = gen_helix_trajectory2(t)
+
 
 	# get t vector
 	t_vector = map(lambda a,b,c: get_t_vector(a,b,c), helix_traj[6], helix_traj[7],helix_traj[8]) 
@@ -494,12 +592,12 @@ def main():
 	ax0.legend(loc='lower right', shadow=True, fontsize='small')
 
 	#ax1.plot(t,u1, color = "r", label = "u1")
-	ax1.plot(t,map(lambda v: v.item(0),uc), color = "g", label = "uc x")
-	ax1.plot(t,map(lambda v: v.item(1),uc), color = "b", label = "uc y")
-	ax1.plot(t,map(lambda v: v.item(2),uc), color = "c", label = "uc z")
-	ax1.set_title("orientation rate evolution")
+	ax1.plot(t,map(lambda v: v.item(0),u1), color = "g", label = "u1")
+	#ax1.plot(t,map(lambda v: v.item(1),uc), color = "b", label = "uc y")
+	#ax1.plot(t,map(lambda v: v.item(2),uc), color = "c", label = "uc z")
+	ax1.set_title("Input U1 evolution")
 	ax1.set_xlabel('t {s}')
-	ax1.set_ylabel('{rad/s}')
+	ax1.set_ylabel('{N}')
 	ax1.legend(loc='lower right', shadow=True, fontsize='small')
 
 
@@ -525,70 +623,88 @@ def main():
 	ax3.set_ylabel('{rad/s2}')
 	ax3.legend(loc='lower right', shadow=True, fontsize='small')
 
+	ax4.plot(t,helix_traj[0], color="r", label = 'ref x')
+	ax4.plot(t,helix_traj[1], color="g", label = 'ref y')
+	ax4.plot(t,helix_traj[2], color="b", label = 'ref z')
+	ax4.plot(t,helix_traj[15], color="c", label = 'ref psi')
+	ax4.set_title("Reference position")
+	ax4.set_xlabel('t {s}')
+	ax4.set_ylabel('{m},{rad}')
+	ax4.legend(loc='lower right', shadow=True, fontsize='small')
 
 
-	# making the following computations just to check computer_ref method.
-	# The output of the above code should be the same for the below code,
-	# i.e. the two figures generated have graph the exact same curves.
-	ref = map(lambda a,b,c,e,f,g,h,i,j,k,l,m,n,o,p,r,s,t: compute_ref([np.array([[a],[b],[c]]),
-																		   np.array([[e],[f],[g]]),
-																		   np.array([[h],[i],[j]]),
-																		   np.array([[k],[l],[m]]),
-																		   np.array([[n],[o],[p]]),r,s,t]),
-																		   helix_traj[0],helix_traj[1],helix_traj[2],
-																		   helix_traj[3],helix_traj[4],helix_traj[5],
-																		   helix_traj[6],helix_traj[7],helix_traj[8],
-																		   helix_traj[9],helix_traj[10],helix_traj[11],
-																		   helix_traj[12],helix_traj[13],helix_traj[14],
-																		   helix_traj[15],helix_traj[16],helix_traj[17])
+	ax5.plot(t,map(lambda v: v.item(0),ux), color = "r", label = "ref u1")
+	ax5.plot(t,map(lambda v: v.item(1),ux), color = "g", label = "ref u2")
+	ax5.plot(t,map(lambda v: v.item(2),ux), color = "b", label = "ref u3")
+	ax5.set_title("Input torques u2, u3, u4 evolution")
+	ax5.set_xlabel('t {s}')
+	ax5.set_ylabel('{N/m}')
+	ax5.legend(loc='lower right', shadow=True, fontsize='small')
 
-	ref_pos_x = map(lambda a: a[0].item(0),ref)
-	ref_pos_y = map(lambda a: a[0].item(1),ref)
-	ref_pos_z = map(lambda a: a[0].item(2),ref)
+	if(False):
 
-	ref_uc_x = map(lambda a: a[6].item(0),ref)
-	ref_uc_y = map(lambda a: a[6].item(1),ref)
-	ref_uc_z = map(lambda a: a[6].item(2),ref)
+		# making the following computations just to check computer_ref method.
+		# The output of the above code should be the same for the below code,
+		# i.e. the two figures generated have graph the exact same curves.
+		ref = map(lambda a,b,c,e,f,g,h,i,j,k,l,m,n,o,p,r,s,t: compute_ref([np.array([[a],[b],[c]]),
+																			   np.array([[e],[f],[g]]),
+																			   np.array([[h],[i],[j]]),
+																			   np.array([[k],[l],[m]]),
+																			   np.array([[n],[o],[p]]),r,s,t]),
+																			   helix_traj[0],helix_traj[1],helix_traj[2],
+																			   helix_traj[3],helix_traj[4],helix_traj[5],
+																			   helix_traj[6],helix_traj[7],helix_traj[8],
+																			   helix_traj[9],helix_traj[10],helix_traj[11],
+																			   helix_traj[12],helix_traj[13],helix_traj[14],
+																			   helix_traj[15],helix_traj[16],helix_traj[17])
 
-	ref_phi = map(lambda a: a[2].item(0)*180.0/np.pi,ref)
-	ref_theta = map(lambda a: a[2].item(1)*180.0/np.pi,ref)
-	ref_psi = map(lambda a: a[2].item(2)*180.0/np.pi,ref)
+		ref_pos_x = map(lambda a: a[0].item(0),ref)
+		ref_pos_y = map(lambda a: a[0].item(1),ref)
+		ref_pos_z = map(lambda a: a[0].item(2),ref)
 
-	ref_wx_dot = map(lambda a: a[5].item(0),ref)
-	ref_wy_dot = map(lambda a: a[5].item(1),ref)
-	ref_wz_dot = map(lambda a: a[5].item(2),ref)
+		ref_uc_x = map(lambda a: a[6].item(0),ref)
+		ref_uc_y = map(lambda a: a[6].item(1),ref)
+		ref_uc_z = map(lambda a: a[6].item(2),ref)
 
-	fig1ax0.plot(ref_pos_x,ref_pos_y, ref_pos_z, color = 'r', label = "Ref Traj")
-	fig1ax0.set_title("Reference helix trajectory {3D}")
-	fig1ax0.set_xlabel('ref x {m}')
-	fig1ax0.set_ylabel('ref y {m}')
-	fig1ax0.set_zlabel('ref z {m}')
-	fig1ax0.legend(loc='lower right', shadow=True, fontsize='small')
+		ref_phi = map(lambda a: a[2].item(0)*180.0/np.pi,ref)
+		ref_theta = map(lambda a: a[2].item(1)*180.0/np.pi,ref)
+		ref_psi = map(lambda a: a[2].item(2)*180.0/np.pi,ref)
 
-	#ax1.plot(t,u1, color = "r", label = "u1")
-	fig1ax1.plot(t,ref_uc_x, color = "g", label = "uc x")
-	fig1ax1.plot(t,ref_uc_y, color = "b", label = "uc y")
-	fig1ax1.plot(t,ref_uc_z, color = "c", label = "uc z")
-	fig1ax1.set_title("orientation rate evolution")
-	fig1ax1.set_xlabel('t {s}')
-	fig1ax1.set_ylabel('{rad/s}')
-	fig1ax1.legend(loc='lower right', shadow=True, fontsize='small')
+		ref_wx_dot = map(lambda a: a[5].item(0),ref)
+		ref_wy_dot = map(lambda a: a[5].item(1),ref)
+		ref_wz_dot = map(lambda a: a[5].item(2),ref)
 
-	fig1ax2.plot(t,ref_phi, color = "r", label = "phi")
-	fig1ax2.plot(t,ref_theta, color = "g", label = "theta")
-	fig1ax2.plot(t,ref_psi, color = "b", label = "psi")
-	fig1ax2.set_title("orientation evolution")
-	fig1ax2.set_xlabel('t {s}')
-	fig1ax2.set_ylabel('{rad}')
-	fig1ax2.legend(loc='lower right', shadow=True, fontsize='small')
+		fig1ax0.plot(ref_pos_x,ref_pos_y, ref_pos_z, color = 'r', label = "Ref Traj")
+		fig1ax0.set_title("Reference helix trajectory {3D}")
+		fig1ax0.set_xlabel('ref x {m}')
+		fig1ax0.set_ylabel('ref y {m}')
+		fig1ax0.set_zlabel('ref z {m}')
+		fig1ax0.legend(loc='lower right', shadow=True, fontsize='small')
 
-	fig1ax3.plot(t,ref_wx_dot, color = "g", label = "ref wx dot")
-	fig1ax3.plot(t,ref_wy_dot, color = "b", label = "ref wy dot")
-	fig1ax3.plot(t,ref_wz_dot, color = "c", label = "ref wz dot")
-	fig1ax3.set_title("angular acceleration evolution")
-	fig1ax3.set_xlabel('t {s}')
-	fig1ax3.set_ylabel('{rad/s2}')
-	fig1ax3.legend(loc='lower right', shadow=True, fontsize='small')
+		#ax1.plot(t,u1, color = "r", label = "u1")
+		fig1ax1.plot(t,ref_uc_x, color = "g", label = "uc x")
+		fig1ax1.plot(t,ref_uc_y, color = "b", label = "uc y")
+		fig1ax1.plot(t,ref_uc_z, color = "c", label = "uc z")
+		fig1ax1.set_title("orientation rate evolution")
+		fig1ax1.set_xlabel('t {s}')
+		fig1ax1.set_ylabel('{rad/s}')
+		fig1ax1.legend(loc='lower right', shadow=True, fontsize='small')
+
+		fig1ax2.plot(t,ref_phi, color = "r", label = "phi")
+		fig1ax2.plot(t,ref_theta, color = "g", label = "theta")
+		fig1ax2.plot(t,ref_psi, color = "b", label = "psi")
+		fig1ax2.set_title("orientation evolution")
+		fig1ax2.set_xlabel('t {s}')
+		fig1ax2.set_ylabel('{rad}')
+		fig1ax2.legend(loc='lower right', shadow=True, fontsize='small')
+
+		fig1ax3.plot(t,ref_wx_dot, color = "g", label = "ref wx dot")
+		fig1ax3.plot(t,ref_wy_dot, color = "b", label = "ref wy dot")
+		fig1ax3.plot(t,ref_wz_dot, color = "c", label = "ref wz dot")
+		fig1ax3.set_title("angular acceleration evolution")
+		fig1ax3.set_xlabel('t {s}')
+		fig1ax3.set_ylabel('{rad/s2}')
+		fig1ax3.legend(loc='lower right', shadow=True, fontsize='small')
 
 	plt.show()
 
