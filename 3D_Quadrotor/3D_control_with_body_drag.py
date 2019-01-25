@@ -83,11 +83,11 @@ ax3 = fig.add_subplot(2,2,4, projection='3d')
 
 # define constants
 g = 9.81 #m/s2
-b = 0.1  # body drag constant
+b = 0.0  # body drag constant
 c = 0.2 #air friction constant
 
 # quadrotor physical constants
-m = .18  #kg  mass of the quadrotor
+m = 0.18  #kg  mass of the quadrotor
 Ixx =0.00025   # kg*m2 moment of inertia around X-axis (quadrotor rotates around X-axis)
 Iyy =0.000232   # kg*m2 
 Izz =0.0003738   # kg*m2

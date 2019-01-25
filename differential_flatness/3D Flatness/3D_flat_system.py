@@ -333,9 +333,9 @@ def get_wx_dot(y_b,s,u_1_dot,w_x,u_1,w_y,w_z):
 	"""
 		Will use wx_dot = (a + b + c)/d
 	"""
-	a = (y_b.T)*s
-	b = 2.0*u_1_dot*w_x/m
-	c = -1.0*u_1*w_y*w_z/m
+	a = -1.0*(y_b.T)*s
+	b = -2.0*u_1_dot*w_x/m
+	c = u_1*w_y*w_z/m
 	d = u_1/m
 	w_x_dot = (a+b+c)/d
 	return w_x_dot
